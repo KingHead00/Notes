@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Flute Roll</title>
+<style>
+:root{--bg:#e9edf1;--card:#f8fafb;--ink:#18212b;--mute:#5d6b7a;--line:#c5ced7;--acc:#1d6f8f;--acc2:#b8680a;--on:#fff;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e141a;--card:#151d25;--ink:#e7edf2;--mute:#8696a6;--line:#2b3743;--acc:#5cbfe0;--acc2:#f2b04a;--on:#0b1a22;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e141a;--card:#151d25;--ink:#e7edf2;--mute:#8696a6;--line:#2b3743;--acc:#5cbfe0;--acc2:#f2b04a;--on:#0b1a22;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{margin:0;padding:24px 16px 40px;color:var(--ink);font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1080px;margin:auto}
+h1{margin:0;font:600 clamp(28px,5vw,40px)/1.1 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;letter-spacing:-.01em}
+.sub{margin:6px 0 20px;color:var(--mute)}
+.bar{display:flex;flex-wrap:wrap;gap:16px 22px;align-items:flex-end;padding:16px 18px;background:var(--card);border:1px solid var(--line);border-radius:14px}
+.g{display:flex;flex-direction:column;gap:6px}
+.g>span{font-size:12px;color:var(--mute)}
+button{font:inherit;font-weight:600;color:var(--ink);background:none;border:1px solid var(--line);border-radius:10px;padding:9px 16px;cursor:pointer;transition:border-color .15s,background .15s}
+button:hover{border-color:var(--acc)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.pri{background:var(--acc);color:var(--on);border-color:var(--acc);min-width:104px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:9px 14px}
+.seg .on,#met.on{background:var(--acc);color:var(--on);border-color:var(--acc)}
+input[type=range]{width:170px;accent-color:var(--acc)}
+#met{display:inline-flex;align-items:center}
+#dot{display:inline-block;width:9px;height:9px;margin-left:9px;border-radius:50%;background:var(--line)}
+#met.on #dot{background:var(--on);opacity:.4}
+#met.on #dot.b{opacity:1;box-shadow:0 0 10px var(--on)}
+#box{margin-top:16px;overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:14px}
+#s{display:block;cursor:pointer;touch-action:manipulation}
+.tx{font:10px ui-sans-serif,system-ui,sans-serif;fill:var(--mute)}
+.ln{fill:var(--ink);font-weight:700}
+.bt{font:10px ui-sans-serif,system-ui,sans-serif;fill:var(--mute);opacity:.75}
+.l{stroke:var(--ink);stroke-width:1.4;opacity:.8}
+.gl{stroke:var(--line);stroke-dasharray:3 5}
+.cd{stroke:var(--line);opacity:.35}
+.cb{stroke:var(--line)}
+.ld{stroke:var(--ink);stroke-width:1.6}
+.clef{font-size:88px;fill:var(--ink);font-family:"Noto Music","Segoe UI Symbol","Apple Symbols",serif}
+.nt{fill:var(--acc);transition:fill .1s}
+.nt.hot{fill:var(--acc2)}
+.nl{font:700 9px ui-sans-serif,system-ui,sans-serif;fill:var(--on);pointer-events:none}
+.ac{font-size:18px;fill:var(--ink);pointer-events:none}
+#gh{fill:var(--acc);opacity:.35;pointer-events:none}
+#ph{fill:var(--acc2);opacity:.14;pointer-events:none}
+#info{margin:12px 4px 0;color:var(--mute);font-size:13px;min-height:20px}
+</style>
+</head>
+<body>
+<main>
+<h1>Flute Roll</h1>
+<p class="sub">Place notes on the staff, stack them for a chord, then press play.</p>
+<section class="bar">
+<button id="play" class="pri">▶ Play</button>
+<label class="g"><span>Tempo <b id="bv">100</b> BPM</span><input id="bpm" type="range" min="40" max="220" value="100"></label>
+<button id="met">Metronome<i id="dot"></i></button>
+<label class="g"><span>Metronome tempo <b id="mv">100</b> BPM</span><input id="mtempo" type="range" min="40" max="220" value="100"></label>
+<div class="g"><span>Accidental</span><div class="seg" id="acc"><button data-v="0" class="on" title="Natural">♮</button><button data-v="1" title="Sharp">♯</button><button data-v="-1" title="Flat">♭</button></div></div>
+<div class="g"><span>Beats</span><div class="seg" id="len"><button data-v="8">8</button><button data-v="16" class="on">16</button><button data-v="32">32</button></div></div>
+<button id="clr">Clear</button>
+</section>
+<div id="box"><svg id="s"><g id="gg"></g><rect id="ph" y="0" width="44" style="display:none"></rect><g id="nn"></g><ellipse id="gh" rx="9.5" ry="6.5" style="display:none"></ellipse></svg></div>
+<p id="info"></p>
+</main>
+<script>
+const $=id=>document.getElementById(id),LET='CDEFGAB',SEM=[0,2,4,5,7,9,11];
+const TOP=26,RH=12,L=100,CW=44,N=22,H=TOP*2+(N-1)*RH;
+const S=Array.from({length:32},()=>({}));
+let len=16,acc=0,bpm=100,playing=0,metro=0,step=0,mbeat=0,mnext=0,mbpm=100,next=0,timer=0,A,C,M;
+const Y=i=>TOP+(N-1-i)*RH,CX=c=>L+c*CW+CW/2;
+const nm=(i,a)=>LET[i%7]+(a>0?'♯':a<0?'♭':'')+(4+Math.floor(i/7));
+const fq=(i,a)=>440*2**((60+12*Math.floor(i/7)+SEM[i%7]+a-69)/12);
+const later=(t,f)=>setTimeout(f,Math.max(0,(t-A.currentTime)*1000));
+const HINT='Flute range is C4 to C7. Click a line or space to place a note; click it again to remove it.';
+
+function audio(){
+  if(!A){A=new(window.AudioContext||window.webkitAudioContext)();C=A.createDynamicsCompressor();C.connect(A.destination)}
+  if(A.state==='suspended')A.resume();
+}
+function bus(){if(!M){M=A.createGain();M.gain.value=.6;M.connect(C)}return M}
+function hush(){if(!M)return;const m=M;M=null;m.gain.setTargetAtTime(0,A.currentTime,.03);setTimeout(()=>m.disconnect(),400)}
+function tone(f,t,d,v){
+  const g=A.createGain(),lp=A.createBiquadFilter(),lfo=A.createOscillator(),lg=A.createGain();
+  lp.type='lowpass';lp.frequency.value=Math.min(f*6,10000);
+  lfo.frequency.value=5.2;lg.gain.value=5;lfo.connect(lg);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.05);
+  g.gain.linearRampToValueAtTime(v*.8,t+d);g.gain.linearRampToValueAtTime(0,t+d+.1);
+  [[1,1],[2,.3],[3,.08]].forEach(([k,a])=>{
+    const o=A.createOscillator(),h=A.createGain();
+    o.frequency.value=f*k;h.gain.value=a;lg.connect(o.detune);o.connect(h);h.connect(lp);o.start(t);o.stop(t+d+.15);
+  });
+  lp.connect(g);g.connect(bus());lfo.start(t);lfo.stop(t+d+.15);
+}
+function click(t,hi){
+  const o=A.createOscillator(),g=A.createGain();o.frequency.value=hi?1760:1180;
+  g.gain.setValueAtTime(.35,t);g.gain.exponentialRampToValueAtTime(.001,t+.05);
+  o.connect(g);g.connect(A.destination);o.start(t);o.stop(t+.06);
+}
+
+function grid(){
+  const W=L+len*CW+16;let h='';
+  $('s').setAttribute('width',W);$('s').setAttribute('height',H);$('ph').setAttribute('height',H);
+  for(let i=0;i<N;i++){
+    const y=Y(i),st=i>=2&&i<=10&&i%2===0;
+    h+=`<text class="tx${st?' ln':''}" x="34" y="${y+3.5}" text-anchor="end">${nm(i,0)}</text>`;
+    if(st)h+=`<line class="l" x1="44" x2="${W-8}" y1="${y}" y2="${y}"/>`;
+    else if(i%2===0)h+=`<line class="gl" x1="${L}" x2="${W-8}" y1="${y}" y2="${y}"/>`;
+  }
+  for(let c=0;c<=len;c++)h+=`<line class="${c%4?'cd':'cb'}" x1="${L+c*CW}" x2="${L+c*CW}" y1="${TOP-6}" y2="${H-TOP+6}"/>`;
+  for(let c=0;c<len;c++)h+=`<text class="bt" x="${CX(c)}" y="14" text-anchor="middle">${c%4+1}</text>`;
+  $('gg').innerHTML=h+`<text class="clef" x="46" y="${Y(2)+8}">𝄞</text>`;
+}
+function notes(){
+  let h='';
+  for(let c=0;c<len;c++)for(const k in S[c]){
+    const i=+k,a=S[c][k],x=CX(c),y=Y(i),ld=yy=>`<line class="ld" x1="${x-17}" x2="${x+17}" y1="${yy}" y2="${yy}"/>`;
+    if(i===0)h+=ld(y);
+    for(let j=12;j<=i;j+=2)h+=ld(Y(j));
+    h+=`<ellipse class="nt" data-c="${c}" cx="${x}" cy="${y}" rx="9.5" ry="6.5" transform="rotate(-18 ${x} ${y})"/>`
+      +`<text class="nl" x="${x}" y="${y+3.2}" text-anchor="middle">${LET[i%7]}</text>`
+      +(a?`<text class="ac" x="${x-14}" y="${y+6}" text-anchor="end">${a>0?'♯':'♭'}</text>`:'');
+  }
+  $('nn').innerHTML=h;
+}
+
+function mark(c,t){later(t,()=>{
+  if(!playing)return;const x=L+c*CW,b=$('box');
+  $('ph').style.display='';$('ph').setAttribute('x',x);
+  $('nn').querySelectorAll('.nt').forEach(e=>e.classList.toggle('hot',+e.dataset.c===c));
+  if(x<b.scrollLeft+L||x>b.scrollLeft+b.clientWidth-CW)b.scrollLeft=x-L;
+})}
+function tick(){
+  const now=A.currentTime;
+  if(playing){
+    if(next<now)next=now+.05;
+    while(next<now+.12){
+      const d=60/bpm,c=step,ks=Object.keys(S[c]),v=.5/Math.sqrt(Math.max(1,ks.length));
+      ks.forEach(k=>tone(fq(+k,S[c][k]),next,d*.95,v));
+      mark(c,next);step=(step+1)%len;next+=d;
+    }
+  }
+  if(metro){
+    if(mnext<now)mnext=now+.05;
+    while(mnext<now+.12){
+      click(mnext,mbeat%4===0);later(mnext,()=>{const e=$('dot');e.classList.add('b');setTimeout(()=>e.classList.remove('b'),90)});
+      mbeat++;mnext+=60/mbpm;
+    }
+  }
+}
+function run(){if(!timer)timer=setInterval(tick,25)}
+function halt(){if(!playing&&!metro&&timer){clearInterval(timer);timer=0}}
+function stop(){
+  playing=0;$('play').textContent='▶ Play';$('ph').style.display='none';
+  $('nn').querySelectorAll('.hot').forEach(e=>e.classList.remove('hot'));hush();halt();
+}
+$('play').onclick=()=>{if(playing)return stop();audio();playing=1;step=0;next=A.currentTime+.06;if(metro){mnext=next;mbeat=0}$('play').textContent='■ Stop';run()};
+$('met').onclick=e=>{
+  metro=!metro;e.currentTarget.classList.toggle('on',metro);
+  if(metro){audio();mnext=A.currentTime+.06;mbeat=0;run()}else halt();
+};
+$('bpm').oninput=e=>{bpm=+e.target.value;$('bv').textContent=bpm};
+$('mtempo').oninput=e=>{mbpm=+e.target.value;$('mv').textContent=mbpm};
+$('clr').onclick=()=>{S.forEach(o=>{for(const k in o)delete o[k]});notes()};
+document.querySelectorAll('.seg').forEach(sg=>sg.onclick=e=>{
+  const b=e.target.closest('button');if(!b)return;
+  sg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+  if(sg.id==='acc')acc=+b.dataset.v;else{len=+b.dataset.v;if(step>=len)step=0;grid();notes()}
+});
+
+const s=$('s'),gh=$('gh');
+function hit(e){
+  const r=s.getBoundingClientRect(),c=Math.floor((e.clientX-r.left-L)/CW),i=N-1-Math.round((e.clientY-r.top-TOP)/RH);
+  return c>=0&&c<len&&i>=0&&i<N?{c,i}:null;
+}
+s.onpointermove=e=>{
+  const p=hit(e);
+  if(!p){gh.style.display='none';$('info').textContent=HINT;return}
+  const x=CX(p.c),y=Y(p.i);
+  gh.setAttribute('cx',x);gh.setAttribute('cy',y);gh.setAttribute('transform',`rotate(-18 ${x} ${y})`);gh.style.display='';
+  $('info').textContent=nm(p.i,acc)+', beat '+(p.c+1);
+};
+s.onpointerleave=()=>{gh.style.display='none';$('info').textContent=HINT};
+s.onclick=e=>{
+  const p=hit(e);if(!p)return;audio();const o=S[p.c];
+  if(o[p.i]===acc)delete o[p.i];else{o[p.i]=acc;tone(fq(p.i,acc),A.currentTime,.45,.4)}
+  notes();
+};
+
+[[0,9],[1,8],[2,7],[3,8],[4,9],[5,9],[6,9],[8,8],[9,8],[10,8],[12,9],[13,11],[14,11],[15,7],[15,9],[15,11]].forEach(([c,i])=>S[c][i]=0);
+grid();notes();$('info').textContent=HINT;
+</script>
+</body>
+</html>

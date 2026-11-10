@@ -21,7 +21,7 @@
 </div>
 <div class="grp">
 <div class="g"><span>Accidental</span><div class="seg" id="acc"><button data-v="0" class="on" title="Natural">♮</button><button data-v="1" title="Sharp">♯</button><button data-v="-1" title="Flat">♭</button></div></div>
-<div class="g"><span>Beats</span><div class="seg" id="len"><button data-v="8">8</button><button data-v="16" class="on">16</button><button data-v="32">32</button></div></div>
+<div class="g"><span>Beats</span><div class="seg" id="len"><button data-v="8">8</button><button data-v="16" class="on">16</button><button data-v="32">32</button><button data-v="custom">Custom</button><input id="clen" type="number" min="1" max="128" value="24" hidden aria-label="Custom number of beats"></div></div>
 <button id="save" title="Save your notes in this browser">Save</button>
 <button id="clr">Clear</button>
 </div>
@@ -32,12 +32,13 @@
 <script>
 const $=id=>document.getElementById(id),LET='CDEFGAB',SEM=[0,2,4,5,7,9,11];
 const TOP=26,RH=12,L=100,CW=44,N=22,H=TOP*2+(N-1)*RH;
-const S=Array.from({length:32},()=>({}));
+const S=Array.from({length:128},()=>({}));
 let len=16,acc=0,bpm=100,playing=0,metro=0,step=0,mbeat=0,mnext=0,mbpm=100,next=0,timer=0,A,C,M;
 const Y=i=>TOP+(N-1-i)*RH,CX=c=>L+c*CW+CW/2;
 const nm=(i,a)=>LET[i%7]+(a>0?'♯':a<0?'♭':'')+(4+Math.floor(i/7));
 const fq=(i,a)=>440*2**((60+12*Math.floor(i/7)+SEM[i%7]+a-69)/12);
 const later=(t,f)=>setTimeout(f,Math.max(0,(t-A.currentTime)*1000));
+const setLen=n=>{len=Math.max(1,Math.min(128,Math.round(n)||16));if(step>=len)step=0;grid();notes()};
 const fill=r=>r.style.setProperty('--p',(r.value-r.min)/(r.max-r.min)*100+'%');
 const HINT='Flute range is C4 to C7. Click a line or space to place a note; click it again to remove it.';
 
@@ -133,11 +134,16 @@ $('save').onclick=e=>{
   try{localStorage.setItem('fluteRoll',JSON.stringify({n:S,len,bpm,mbpm}))}catch(x){ok=0}
   b.textContent=ok?'Saved ✓':'Save failed';setTimeout(()=>b.textContent='Save',1600);
 };
+$('clen').oninput=e=>{if(e.target.value!=='')setLen(+e.target.value)};
+$('clen').onchange=e=>{setLen(+e.target.value);e.target.value=len};
 $('clr').onclick=()=>{S.forEach(o=>{for(const k in o)delete o[k]});notes()};
 document.querySelectorAll('.seg').forEach(sg=>sg.onclick=e=>{
   const b=e.target.closest('button');if(!b)return;
   sg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
-  if(sg.id==='acc')acc=+b.dataset.v;else{len=+b.dataset.v;if(step>=len)step=0;grid();notes()}
+  if(sg.id==='acc')acc=+b.dataset.v;else{
+    const cu=b.dataset.v==='custom';$('clen').hidden=!cu;
+    if(cu){setLen(+$('clen').value);$('clen').focus()}else setLen(+b.dataset.v);
+  }
 });
 
 const s=$('s'),gh=$('gh');
@@ -165,7 +171,9 @@ try{
   if(sv&&sv.n){
     sv.n.forEach((o,c)=>S[c]=o);len=sv.len;bpm=sv.bpm;mbpm=sv.mbpm;
     $('bpm').value=bpm;$('bv').textContent=bpm;$('mtempo').value=mbpm;$('mv').textContent=mbpm;
-    document.querySelectorAll('#len button').forEach(b=>b.classList.toggle('on',+b.dataset.v===len));
+    const cu=![8,16,32].includes(len);
+    document.querySelectorAll('#len button').forEach(b=>b.classList.toggle('on',cu?b.dataset.v==='custom':+b.dataset.v===len));
+    $('clen').hidden=!cu;$('clen').value=len;
   }
 }catch(x){}
 document.querySelectorAll('input[type=range]').forEach(r=>fill(r));
